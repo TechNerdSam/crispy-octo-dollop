@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'Espèce Menacée de l'Heure</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chargement de la police "Inter" pour un look moderne -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Définition de la police Inter comme police par défaut */
+        :root {
+            --base-font-size: 1.125rem; /* 18px */
+            --base-line-height: 1.75rem; /* 28px */
+        }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Effets de lueur */
+        .futuristic-glow {
+            box-shadow: 0 0 25px rgba(45, 212, 191, 0.1), 0 0 10px rgba(45, 212, 191, 0.05);
+        }
+        .text-glow {
+            text-shadow: 0 0 15px rgba(45, 212, 191, 0.3);
+        }
+        
+        /* Styles des boutons */
+        .btn-feature {
+            @apply bg-gray-800 border border-gray-700 text-gray-300 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300 ease-in-out hover:bg-gray-700 hover:text-white hover:border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed;
+        }
+        .btn-icon {
+            @apply bg-gray-800 border border-gray-700 text-gray-400 p-2 rounded-lg transition-all duration-300 ease-in-out hover:bg-gray-700 hover:text-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-opacity-50;
+        }
+        
+        /* Style pour la barre de recherche */
+        .search-input-wrapper { @apply relative; }
+        .search-input {
+            @apply w-full bg-gray-900 border border-gray-700 text-gray-200 pl-4 pr-10 py-3 rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400;
+        }
+        #btn-clear-search {
+            @apply absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white cursor-pointer hidden;
+        }
+        
+        /* Style pour les panneaux (modal) */
+        .modal-backdrop {
+            @apply fixed inset-0 bg-gray-950 bg-opacity-90 backdrop-blur-lg z-40 transition-opacity duration-300 ease-in-out;
+        }
+        .modal-content {
+            @apply fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-2xl bg-gray-900 border border-gray-800 rounded-3xl z-50 flex flex-col p-6 futuristic-glow;
+        }
+        #species-panel-content {
+            @apply h-4/5 max-h-[700px]; /* Spécifique au panneau de liste */
+        }
+        #stats-panel-content {
+            @apply max-h-[700px]; /* Spécifique au panneau de stats */
+        }
+        #all-species-list li {
+            @apply flex justify-between items-center text-gray-300 text-lg p-4 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-gray-800 hover:text-teal-400;
+        }
+        
+        /* Style pour le contenu principal (taille de police) */
+        .content-area {
+            font-size: var(--base-font-size);
+            line-height: var(--base-line-height);
+        }
+        
+        /* Bouton Haut de page */
+        #btn-scroll-top {
+            @apply fixed bottom-6 right-6 btn-icon z-30 hidden p-3;
+        }
+        
+        /* Animation d'apparition */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        /* NOUVEAU: Style pour le bouton Favori */
+        #btn-favorite {
+            @apply text-gray-600 transition-colors duration-200 hover:text-yellow-400;
+        }
+        #btn-favorite.favorited {
+            @apply text-yellow-400;
+        }
+        .star-icon {
+            @apply w-7 h-7;
+        }
+        
+        /* Styles d'impression */
+        @media print {
+            body { background-color: #ffffff; color: #000000; }
+            header, footer, #btn-scroll-top, .controls-bar, .actions-bar, #nav-bar, #font-controls { display: none; }
+            main { max-width: 100% !important; margin: 0; }
+            .print-area {
+                box-shadow: none; border: 1px solid #ccc; backdrop-filter: none; background: #fff; padding: 1rem;
+            }
+            h2 { color: #000 !important; }
+            h3 { color: #115e59 !important; }
+            p { color: #333 !important; }
+            #btn-favorite { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-200 min-h-screen antialiased">
+
+    <!-- Bouton Haut de page -->
+    <button id="btn-scroll-top" title="Haut de page">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+    </button>
+
+    <!-- Conteneur principal -->
+    <div class="container mx-auto px-6 py-12 md:py-20 max-w-7xl">
+
+        <!-- Contrôles de police -->
+        <div id="font-controls" class="absolute top-4 right-4 flex gap-2">
+            <button id="btn-font-decrease" class="btn-icon" title="Diminuer la police (Ctrl + -)">A-</button>
+            <button id="btn-font-reset" class="btn-icon" title="Réinitialiser la police (Ctrl + 0)">A</button>
+            <button id="btn-font-increase" class="btn-icon" title="Augmenter la police (Ctrl + +)">A+</button>
+        </div>
+
+        <!-- En-tête -->
+        <header class="text-center mb-12 md:mb-16">
+            <h1 class="text-3xl md:text-5xl font-extrabold text-white">
+                L'Espèce Menacée
+            </h1>
+            <p class="text-2xl md:text-4xl font-medium text-teal-400 text-glow mt-2">
+                de l'Heure 🕐
+            </p>
+            <!-- Date et heure -->
+            <p id="current-date-time" class="text-gray-500 mt-4 text-lg"></p>
+        </header>
+
+        <!-- Barre de navigation temporelle -->
+        <nav id="nav-bar" class="flex justify-between items-center lg:max-w-4xl lg:mx-auto mb-8 gap-4">
+            <button id="btn-prev-hour" class="btn-feature flex-1 flex items-center gap-2 justify-center" title="Espèce précédente (P)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                Précédent
+            </button>
+            <!-- NOUVEAU: Bouton Retour à l'heure -->
+            <button id="btn-back-to-current" class="btn-feature hidden" title="Retour à l'espèce de l'heure (H)">
+                Recharger 🔄
+            </button>
+            <button id="btn-next-hour" class="btn-feature flex-1 flex items-center gap-2 justify-center" title="Espèce suivante (N)">
+                Suivant
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
+        </nav>
+
+        <!-- Grille principale -->
+        <main class="grid grid-cols-1 gap-8 items-center lg:max-w-4xl lg:mx-auto">
+
+            <!-- Section Informations -->
+            <div id="print-content" class="bg-gray-900/80 backdrop-blur-md border border-gray-800 rounded-3xl p-8 md:p-12 futuristic-glow print-area">
+                
+                <!-- Nom de l'espèce et NOUVEAU Bouton Favori -->
+                <div class="flex justify-between items-start gap-4 mb-6">
+                    <h2 id="species-name" class="text-4xl md:text-5xl font-bold text-white">
+                        Chargement...
+                    </h2>
+                    <button id="btn-favorite" title="Ajouter aux favoris">
+                        <!-- L'icône (pleine ou vide) sera gérée par JS -->
+                    </button>
+                </div>
+
+                <!-- Habitat -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-teal-400 uppercase tracking-wider mb-2">
+                        Habitat
+                    </h3>
+                    <p id="species-habitat" class="text-gray-300 leading-relaxed content-area">
+                        ...
+                    </p>
+                </div>
+
+                <!-- Menaces -->
+                <div>
+                    <h3 class="text-lg font-semibold text-teal-400 uppercase tracking-wider mb-2">
+                        Pourquoi est-elle en danger ?
+                    </h3>
+                    <p id="species-threat" class="text-gray-300 leading-relaxed content-area">
+                        ...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Barre d'actions -->
+            <section class="actions-bar mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <button id="btn-tts" class="btn-feature" title="Lire la description">🔊 Lire</button>
+                <button id="btn-learn-more" class="btn-feature" title="Rechercher sur Google">🌐 En savoir plus</button>
+                <button id="btn-share-twitter" class="btn-feature" title="Partager sur X">X (Twitter)</button>
+                <button id="btn-share-email" class="btn-feature" title="Partager par Email">@ Email</button>
+                <button id="btn-donate" class="btn-feature bg-teal-600 hover:bg-teal-500 text-white col-span-2 md:col-span-1 lg:col-auto" title="Faire un don (WWF)">❤️ Faire un don</button>
+            </section>
+            
+            <!-- Barre de fonctionnalités -->
+            <section class="controls-bar mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <button id="btn-random" class="btn-feature" title="Espèce aléatoire (R)">🎲 Aléatoire</button>
+                <button id="btn-view-all" class="btn-feature" title="Ouvrir la liste (S)">📜 Voir les 20</button>
+                <button id="btn-copy" class="btn-feature">📋 Copier</button>
+                <button id="btn-print" class="btn-feature">🖨️ Imprimer</button>
+                <!-- NOUVEAU: Boutons Stats et Proposer -->
+                <button id="btn-stats" class="btn-feature">📊 Stats</button>
+                <button id="btn-propose" class="btn-feature">✉️ Proposer</button>
+            </section>
+
+        </main>
+
+        <!-- Pied de page -->
+        <footer class="text-center mt-16 text-gray-600">
+            <p>Un projet de sensibilisation pour notre planète. Raccourcis: [N] Suivant, [P] Précédent, [R] Aléatoire, [S] Recherche, [H] Accueil</p>
+        </footer>
+
+    </div>
+
+    <!-- Panneau (Modal) pour "Voir tout" -->
+    <div id="species-panel" class="modal-backdrop hidden" aria-modal="true" role="dialog">
+        <div id="species-panel-content" class="modal-content">
+            <!-- En-tête du panneau -->
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-white">Base de données</h3>
+                <button id="btn-close-panel" class="text-gray-500 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+            </div>
+            
+            <!-- Barre de recherche -->
+            <div class="search-input-wrapper mb-4">
+                <input type="search" id="search-input" class="search-input" placeholder="Rechercher une espèce...">
+                <button id="btn-clear-search" title="Effacer la recherche">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+
+            <!-- Tris, Compteur et NOUVEAU Filtre Favoris -->
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 text-sm gap-4">
+                <div class="flex gap-2">
+                    <button id="btn-sort-az" class="btn-icon" title="Trier A-Z">A↓Z</button>
+                    <button id="btn-sort-za" class="btn-icon" title="Trier Z-A">Z↓A</button>
+                    <button id="btn-toggle-favorites" class="btn-icon" title="Voir les favoris">
+                        ⭐️
+                    </button>
+                </div>
+                <p id="search-results-count" class="text-gray-500">20 espèces</p>
+            </div>
+            
+            <!-- Liste des espèces -->
+            <ul id="all-species-list" class="flex-1 overflow-y-auto pr-2">
+                <!-- Le contenu sera généré par JS -->
+            </ul>
+        </div>
+    </div>
+    
+    <!-- NOUVEAU: Panneau (Modal) pour "Statistiques" -->
+    <div id="stats-panel" class="modal-backdrop hidden" aria-modal="true" role="dialog">
+        <div id="stats-panel-content" class="modal-content">
+            <!-- En-tête du panneau -->
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-white">Statistiques</h3>
+                <button id="btn-close-stats-panel" class="text-gray-500 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+            </div>
+            <!-- Contenu des stats -->
+            <div class="space-y-4 text-gray-300">
+                <p class="text-lg">Fiches consultées (cette session) : <span id="stats-viewed" class="text-xl font-bold text-teal-400">0</span></p>
+                <p class="text-lg">Espèces en favoris : <span id="stats-favorites" class="text-xl font-bold text-teal-400">0</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Zone de texte cachée pour la copie -->
+    <textarea id="copy-textarea" style="position: absolute; left: -9999px;"></textarea>
+    
+    <!-- NOUVEAU: Icônes SVG pour favoris -->
+    <svg width="0" height="0" class="hidden">
+      <symbol xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" id="icon-star-empty">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" id="icon-star-filled">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+      </symbol>
+    </svg>
+
+    <!-- 
+      Début du JavaScript
+    -->
+    <script type="module">
+        // Base de données des 20 espèces
+        const speciesDatabase = [
+            { name: "Panda Géant (Ailuropoda melanoleuca)", habitat: "Forêts de bambou tempérées dans les montagnes du sud-ouest de la Chine.", threat: "Perte et fragmentation de l'habitat (agriculture, déforestation). Régime alimentaire très spécialisé." },
+            { name: "Léopard des Neiges (Panthera uncia)", habitat: "Hautes montagnes d'Asie centrale et du Sud.", threat: "Braconnage (fourrure, os), conflits avec les éleveurs, diminution des proies." },
+            { name: "Orang-outan de Bornéo (Pongo pygmaeus)", habitat: "Forêts tropicales humides de Bornéo.", threat: "Déforestation massive (huile de palme), exploitation forestière illégale, incendies." },
+            { name: "Vaquita (Phocoena sinus)", habitat: "Partie nord du golfe de Californie, Mexique.", threat: "Prise accessoire dans les filets maillants illégaux (pêche au totoaba)." },
+            { name: "Léopard de l'Amour (Panthera pardus orientalis)", habitat: "Forêts tempérées (Russie, Chine, Corée du Nord).", threat: "Braconnage (fourrure), perte d'habitat, consanguinité (population très faible)." },
+            { name: "Rhinocéros de Java (Rhinoceros sondaicus)", habitat: "Parc national d'Ujung Kulon, Java, Indonésie.", threat: "Braconnage (corne), maladies, catastrophes naturelles (population unique)." },
+            { name: "Tigre (Panthera tigris)", habitat: "Forêts tropicales, mangroves, savanes (Asie).", threat: "Braconnage (peau, os), perte d'habitat, conflit avec l'homme." },
+            { name: "Baleine Bleue (Balaenoptera musculus)", habitat: "Tous les océans du monde.", threat: "Collisions avec les navires, pollution sonore, changement climatique (affectant le krill)." },
+            { name: "Kakapo (Strigops habroptilus)", habitat: "Îles sanctuaires de Nouvelle-Zélande.", threat: "Prédation (espèces introduites), faible taux de reproduction." },
+            { name: "Gorille des montagnes (Gorilla beringei beringei)", habitat: "Forêts de nuages des Virunga (Rwanda, Ouganda, RDC).", threat: "Perte d'habitat, braconnage, pièges, instabilité politique." },
+            { name: "Rhinocéros noir (Diceros bicornis)", habitat: "Savanes et broussailles d'Afrique orientale/australe.", threat: "Braconnage intensif pour sa corne (médecine traditionnelle)." },
+            { name: "Tortue Luth (Dermochelys coriacea)", habitat: "Océans tropicaux et tempérés.", threat: "Prise accessoire (pêche), ingestion de plastique, destruction des sites de nidification." },
+            { name: "Pangolin (Manis spp.)", habitat: "Forêts et savanes d'Afrique et d'Asie.", threat: "Animal le plus braconné (viande, écailles pour médecine traditionnelle)." },
+            { name: "Ours polaire (Ursus maritimus)", habitat: "Banquis de l'océan Arctique.", threat: "Changement climatique (fonte de la banquise), réduisant l'accès à la chasse." },
+            { name: "Axolotl (Ambystoma mexicanum)", habitat: "Lac Xochimilco, près de Mexico.", threat: "Urbanisation, pollution de l'eau, introduction de poissons prédateurs." },
+            { name: "Condor de Californie (Gymnogyps californianus)", habitat: "Montagnes et canyons de Californie.", threat: "Empoisonnement au plomb (fragments de balles dans les carcasses)." },
+            { name: "Bonobo (Pan paniscus)", habitat: "Forêts tropicales du bassin du Congo (RDC).", threat: "Braconnage (viande de brousse), perte d'habitat, instabilité civile." },
+            { name: "Saola (Pseudoryx nghethensis)", habitat: "Montagnes annamites (Vietnam, Laos).", threat: "Piégeage (braconnage pour d'autres animaux), perte d'habitat." },
+            { name: "Ara de Spix (Cyanopsitta spixii)", habitat: "Forêts de galerie au Brésil (éteint à l'état sauvage).", threat: "Capture (commerce illégal), destruction de l'habitat (arbres Caraibeira)." },
+            { name: "Thon rouge de l'Atlantique (Thunnus thynnus)", habitat: "Océan Atlantique et Méditerranée.", threat: "Surpêche extrême (marché du sushi), pêche illégale." }
+        ];
+
+        // --- Variables d'état ---
+        let currentSpecies = null;
+        const initialHourIndex = getHourIndex();
+        let currentHourIndex = initialHourIndex;
+        let currentSort = 'az';
+        let currentFontSize = 0;
+        let showingFavorites = false;
+        let favorites = JSON.parse(localStorage.getItem('speciesFavorites') || '[]');
+        let viewCount = 0;
+        
+        // --- Icônes SVG ---
+        const starEmptyIcon = '<svg class="star-icon"><use href="#icon-star-empty"></use></svg>';
+        const starFilledIcon = '<svg class="star-icon"><use href="#icon-star-filled"></use></svg>';
+
+        // --- Éléments du DOM ---
+        const panel = document.getElementById('species-panel');
+        const statsPanel = document.getElementById('stats-panel');
+        const allSpeciesList = document.getElementById('all-species-list');
+        const searchInput = document.getElementById('search-input');
+        const btnClearSearch = document.getElementById('btn-clear-search');
+        const resultsCount = document.getElementById('search-results-count');
+        const btnScrollTop = document.getElementById('btn-scroll-top');
+        const btnBackToCurrent = document.getElementById('btn-back-to-current');
+        const btnFavorite = document.getElementById('btn-favorite');
+        const btnToggleFavorites = document.getElementById('btn-toggle-favorites');
+        const tts = window.speechSynthesis;
+
+        // --- Fonctions principales ---
+
+        /**
+         * Calcule l'index de l'heure de l'année.
+         */
+        function getHourIndex() {
+            const now = new Date();
+            const startOfYear = new Date(now.getFullYear(), 0, 1);
+            const diff = now - startOfYear; // en ms
+            const oneHour = 1000 * 60 * 60;
+            return Math.floor(diff / oneHour);
+        }
+
+        /**
+         * Affiche une espèce spécifique.
+         */
+        function displaySpecies(species) {
+            currentSpecies = species;
+            viewCount++; // Incrémente le compteur de vues
+            
+            const nameEl = document.getElementById('species-name');
+            nameEl.textContent = species.name;
+            nameEl.classList.remove('fade-in');
+            void nameEl.offsetWidth;
+            nameEl.classList.add('fade-in');
+            
+            document.getElementById('species-habitat').textContent = species.habitat;
+            document.getElementById('species-threat').textContent = species.threat;
+            
+            // Met à jour le bouton de navigation "Retour"
+            btnBackToCurrent.classList.toggle('hidden', currentHourIndex === initialHourIndex);
+            
+            // Met à jour l'état du bouton favori
+            updateFavoriteButton();
+        }
+
+        /**
+         * Affiche l'espèce pour un index d'heure donné.
+         */
+        function displaySpeciesForHour(hourIndex) {
+            currentHourIndex = hourIndex;
+            const speciesIndex = hourIndex % speciesDatabase.length;
+            const positiveIndex = (speciesIndex + speciesDatabase.length) % speciesDatabase.length;
+            displaySpecies(speciesDatabase[positiveIndex]);
+        }
+        
+        /**
+         * Met à jour la liste des espèces dans le panneau.
+         */
+        function populateAllSpeciesList() {
+            const query = searchInput.value.toLowerCase().trim();
+            
+            let filteredList = speciesDatabase.filter(species => {
+                // Filtre par favoris
+                if (showingFavorites && !favorites.includes(species.name)) {
+                    return false;
+                }
+                // Filtre par recherche
+                return (
+                    species.name.toLowerCase().includes(query) ||
+                    species.habitat.toLowerCase().includes(query) ||
+                    species.threat.toLowerCase().includes(query)
+                );
+            });
+            
+            // Tri
+            filteredList.sort((a, b) => {
+                return currentSort === 'az' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+            });
+            
+            // Affichage compteur
+            resultsCount.textContent = `${filteredList.length} espèce${filteredList.length > 1 ? 's' : ''}`;
+            
+            // Remplissage de la liste
+            allSpeciesList.innerHTML = '';
+            if (filteredList.length === 0) {
+                allSpeciesList.innerHTML = `<li class="text-gray-500 italic">Aucune espèce trouvée.</li>`;
+                return;
+            }
+            
+            filteredList.forEach(species => {
+                const li = document.createElement('li');
+                li.textContent = species.name;
+                li.dataset.name = species.name; 
+                li.setAttribute('role', 'button');
+                li.setAttribute('tabindex', '0');
+                
+                // NOUVEAU: Ajoute l'étoile aux favoris dans la liste
+                if (favorites.includes(species.name)) {
+                    li.innerHTML = `<span>${species.name}</span> <span class="text-yellow-400">⭐️</span>`;
+                }
+                
+                li.addEventListener('click', () => {
+                    displaySpecies(species);
+                    closePanel(panel);
+                });
+                li.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        displaySpecies(species);
+                        closePanel(panel);
+                    }
+                });
+                allSpeciesList.appendChild(li);
+            });
+        }
+
+        // --- Fonctions des nouvelles fonctionnalités (Favoris, Stats, etc.) ---
+
+        /**
+         * Gère le clic sur le bouton favori.
+         */
+        function toggleFavorite() {
+            if (!currentSpecies) return;
+            const speciesName = currentSpecies.name;
+            const index = favorites.indexOf(speciesName);
+            
+            if (index > -1) {
+                favorites.splice(index, 1); // Retirer
+            } else {
+                favorites.push(speciesName); // Ajouter
+            }
+            
+            localStorage.setItem('speciesFavorites', JSON.stringify(favorites));
+            updateFavoriteButton();
+            populateAllSpeciesList(); // Met à jour la liste (pour les étoiles)
+        }
+
+        /**
+         * Met à jour l'apparence du bouton favori.
+         */
+        function updateFavoriteButton() {
+            if (!currentSpecies) return;
+            if (favorites.includes(currentSpecies.name)) {
+                btnFavorite.innerHTML = starFilledIcon;
+                btnFavorite.classList.add('favorited');
+                btnFavorite.title = "Retirer des favoris";
+            } else {
+                btnFavorite.innerHTML = starEmptyIcon;
+                btnFavorite.classList.remove('favorited');
+                btnFavorite.title = "Ajouter aux favoris";
+            }
+        }
+        
+        /**
+         * Affiche/cache le filtre des favoris.
+         */
+        function toggleFavoriteFilter() {
+            showingFavorites = !showingFavorites;
+            btnToggleFavorites.classList.toggle('bg-teal-600', showingFavorites);
+            btnToggleFavorites.classList.toggle('text-white', showingFavorites);
+            populateAllSpeciesList();
+        }
+
+        /**
+         * Ouvre le panneau de statistiques.
+         */
+        function openStatsPanel() {
+            document.getElementById('stats-viewed').textContent = viewCount;
+            document.getElementById('stats-favorites').textContent = favorites.length;
+            openPanel(statsPanel);
+        }
+        
+        /**
+         * Ouvre un email pour proposer une espèce.
+         */
+        function proposeSpecies() {
+            const subject = "Proposition d'espèce menacée";
+            const body = "Bonjour,\n\nJ'aimerais proposer l'espèce suivante pour votre site :\n\n- Nom : \n- Habitat : \n- Menaces : \n\nMerci !";
+            window.location.href = `mailto:contact@votre-site.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        }
+        
+        /**
+         * Gère les raccourcis clavier.
+         */
+        function handleKeydown(e) {
+            // Ne pas activer les raccourcis si on tape dans la recherche
+            if (e.target.id === 'search-input' || e.ctrlKey || e.metaKey) return;
+            
+            switch(e.key.toLowerCase()) {
+                case 'n':
+                    document.getElementById('btn-next-hour').click();
+                    break;
+                case 'p':
+                    document.getElementById('btn-prev-hour').click();
+                    break;
+                case 'r':
+                    document.getElementById('btn-random').click();
+                    break;
+                case 'h':
+                    if (!btnBackToCurrent.classList.contains('hidden')) {
+                        btnBackToCurrent.click();
+                    }
+                    break;
+                case 's':
+                case 'f':
+                    e.preventDefault(); // Empêche le 'f' de chercher dans la page
+                    openPanel(panel);
+                    break;
+            }
+        }
+
+        // --- Fonctions de base (Panneaux, Date, TTS, Partage, etc.) ---
+
+        function openPanel(panelElement) {
+            panelElement.classList.remove('hidden');
+            if (panelElement === panel) {
+                searchInput.focus();
+                populateAllSpeciesList();
+            }
+        }
+
+        function closePanel(panelElement) {
+            panelElement.classList.add('hidden');
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('current-date-time').textContent = now.toLocaleDateString('fr-FR', options);
+        }
+        
+        function speakSpeciesInfo() {
+            if (tts.speaking) {
+                tts.cancel(); // Arrête la lecture si on reclique
+                return;
+            }
+            if (!currentSpecies) return;
+            const textToSpeak = `Espèce: ${currentSpecies.name}. Habitat: ${currentSpecies.habitat}. Menaces: ${currentSpecies.threat}`;
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.lang = 'fr-FR';
+            tts.speak(utterance);
+        }
+
+        function share(type) {
+            if (!currentSpecies) return;
+            const text = `Connaissez-vous cette espèce menacée ?\n\n${currentSpecies.name}\nHabitat: ${currentSpecies.habitat}\nMenaces: ${currentSpecies.threat}`;
+            const url = window.location.href;
+            if (type === 'twitter') {
+                const tweetText = `Alerte conservation: Le ${currentSpecies.name} est en danger.\nMenaces: ${currentSpecies.threat.substring(0, 100)}...\n#EspèceDeLHeure`;
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(url)}`, '_blank');
+            } else if (type === 'email') {
+                window.location.href = `mailto:?subject=Espèce menacée: ${currentSpecies.name}&body=${encodeURIComponent(text)}`;
+            }
+        }
+
+        function learnMore() {
+            if (!currentSpecies) return;
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(currentSpecies.name)}`, '_blank');
+        }
+
+        function donate() {
+            window.open('https://www.wwf.fr/faire-un-don', '_blank');
+        }
+        
+        function printSpecies() {
+            window.print();
+        }
+
+        function changeFontSize(step) {
+            const root = document.documentElement;
+            if (step === 0) { currentFontSize = 0; }
+            else { currentFontSize = Math.max(-1, Math.min(2, currentFontSize + step)); }
+            
+            let newSize, newLineHeight;
+            switch(currentFontSize) {
+                case -1: newSize = '1rem'; newLineHeight = '1.5rem'; break;
+                case 1: newSize = '1.25rem'; newLineHeight = '1.75rem'; break;
+                case 2: newSize = '1.5rem'; newLineHeight = '2rem'; break;
+                default: newSize = '1.125rem'; newLineHeight = '1.75rem';
+            }
+            root.style.setProperty('--base-font-size', newSize);
+            root.style.setProperty('--base-line-height', newLineHeight);
+        }
+        
+        function scrollToTop() {
+            window.scrollTo(0, 0);
+        }
+        
+        function handleScroll() {
+            btnScrollTop.classList.toggle('hidden', window.scrollY <= 300);
+        }
+
+        function handleSearch() {
+            btnClearSearch.classList.toggle('hidden', searchInput.value.length === 0);
+            populateAllSpeciesList();
+        }
+        
+        function copySpeciesInfo() {
+            if (!currentSpecies) return;
+            const textToCopy = `Espèce: ${currentSpecies.name}\n\nHabitat: ${currentSpecies.habitat}\n\nMenaces: ${currentSpecies.threat}`;
+            const textarea = document.getElementById('copy-textarea');
+            textarea.value = textToCopy;
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                const copyBtn = document.getElementById('btn-copy');
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ Copié !';
+                copyBtn.classList.add('bg-teal-600', 'text-white');
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copier';
+                    copyBtn.classList.remove('bg-teal-600', 'text-white');
+                }, 2000);
+            } catch (err) { console.error('Erreur lors de la copie:', err); }
+        }
+
+        // --- ÉCOUTEURS D'ÉVÉNEMENTS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Init
+            displaySpeciesForHour(currentHourIndex);
+            updateDateTime();
+            setInterval(updateDateTime, 60000);
+            populateAllSpeciesList();
+            
+            // --- Nouveaux écouteurs (v3) ---
+            btnFavorite.addEventListener('click', toggleFavorite);
+            btnToggleFavorites.addEventListener('click', toggleFavoriteFilter);
+            document.getElementById('btn-stats').addEventListener('click', openStatsPanel);
+            document.getElementById('btn-propose').addEventListener('click', proposeSpecies);
+            document.getElementById('btn-back-to-current').addEventListener('click', () => {
+                displaySpeciesForHour(initialHourIndex);
+            });
+            document.getElementById('btn-close-stats-panel').addEventListener('click', () => closePanel(statsPanel));
+            statsPanel.addEventListener('click', (e) => {
+                if (e.target === statsPanel) closePanel(statsPanel);
+            });
+            document.addEventListener('keydown', handleKeydown);
+
+            // --- Écouteurs (v2) ---
+            document.getElementById('btn-prev-hour').addEventListener('click', () => {
+                displaySpeciesForHour(currentHourIndex - 1);
+            });
+            document.getElementById('btn-next-hour').addEventListener('click', () => {
+                displaySpeciesForHour(currentHourIndex + 1);
+            });
+            document.getElementById('btn-tts').addEventListener('click', speakSpeciesInfo);
+            document.getElementById('btn-learn-more').addEventListener('click', learnMore);
+            document.getElementById('btn-donate').addEventListener('click', donate);
+            document.getElementById('btn-share-twitter').addEventListener('click', () => share('twitter'));
+            document.getElementById('btn-share-email').addEventListener('click', () => share('email'));
+            document.getElementById('btn-print').addEventListener('click', printSpecies);
+            document.getElementById('btn-font-decrease').addEventListener('click', () => changeFontSize(-1));
+            document.getElementById('btn-font-reset').addEventListener('click', () => changeFontSize(0));
+            document.getElementById('btn-font-increase').addEventListener('click', () => changeFontSize(1));
+            document.getElementById('btn-sort-az').addEventListener('click', () => {
+                currentSort = 'az';
+                populateAllSpeciesList();
+            });
+            document.getElementById('btn-sort-za').addEventListener('click', () => {
+                currentSort = 'za';
+                populateAllSpeciesList();
+            });
+            btnClearSearch.addEventListener('click', () => {
+                searchInput.value = '';
+                handleSearch();
+                searchInput.focus();
+            });
+            btnScrollTop.addEventListener('click', scrollToTop);
+            window.addEventListener('scroll', handleScroll);
+
+            // --- Écouteurs (v1) ---
+            document.getElementById('btn-random').addEventListener('click', () => {
+                const randomIndex = Math.floor(Math.random() * speciesDatabase.length);
+                displaySpecies(speciesDatabase[randomIndex]);
+            });
+            document.getElementById('btn-copy').addEventListener('click', copySpeciesInfo);
+            document.getElementById('btn-view-all').addEventListener('click', () => openPanel(panel));
+            document.getElementById('btn-close-panel').addEventListener('click', () => closePanel(panel));
+            panel.addEventListener('click', (e) => {
+                if (e.target === panel) closePanel(panel);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !panel.classList.contains('hidden')) closePanel(panel);
+                if (e.key === 'Escape' && !statsPanel.classList.contains('hidden')) closePanel(statsPanel);
+            });
+            searchInput.addEventListener('input', handleSearch);
+        });
+
+    </script>
+    <!-- Fin du JavaScript -->
+
+</body>
+</html>
+
